@@ -7,10 +7,11 @@ import (
 	"net/http"
 	"os"
 
-	_ "github.com/lib/pq"
+	"github.com/exasperlnc/go-vanillajs/data"
 	"github.com/exasperlnc/go-vanillajs/handlers"
 	"github.com/exasperlnc/go-vanillajs/logger"
 	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 )
 func initializeLogger() *logger.Logger {
 	logInstance, err := logger.NewLogger("movie.log")
@@ -44,6 +45,11 @@ func main() {
   }
   defer db.Close()
 
+	movieRepo, err := data.NewMovieRepository(db, logInstance)
+	if err != nil {
+		log.Fatalf("Failed to create movie repository: %v", err)
+	}
+
   // Test the connection
   err = db.Ping()
   if err != nil {
@@ -51,7 +57,7 @@ func main() {
   }
   fmt.Println("Connected to the database!")
 
-	movieHandler := handlers.MovieHandler{}
+	movieHandler := handlers.MovieHandler{Storage: movieRepo, Logger: logInstance}
 
 	http.HandleFunc("/api/movies/top", movieHandler.GetTopMovies)
 	http.HandleFunc("/api/movies/random", movieHandler.GetRandomMovies)
